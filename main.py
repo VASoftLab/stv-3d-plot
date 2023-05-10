@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import math
-
+import numpy as np
 
 class Point3D:
     def __init__(self, x, y, z, name):
@@ -38,9 +38,23 @@ def get_sum_distance(X, Y, Z, MN: Point3D, M0: Point3D):
     for i in range(len(X)):
         dist = get_distance(MN, Point3D(XX[i], YY[i], ZZ[i], "M"))
         if dist < max_dist/2:
-            distances.append(dist)
+            distances.append(1)
 
     return sum(distances)
+
+
+def get_sum_count(X, Y, Z, MN: Point3D, M0: Point3D):
+    max_dist = get_distance(MN, M0)
+    XX = X.tolist()
+    YY = Y.tolist()
+    ZZ = Z.tolist()
+    N = 0
+    for i in range(len(X)):
+        dist = get_distance(MN, Point3D(XX[i], YY[i], ZZ[i], "M"))
+        if dist < max_dist / 2:
+            N += 1
+
+    return N
 
 
 def plot3D(X, Y, Z, M0, M1, M2, M3, M4, M5, M6, M7, M8, P0, P1):
@@ -102,6 +116,8 @@ def plot3D(X, Y, Z, M0, M1, M2, M3, M4, M5, M6, M7, M8, P0, P1):
 
     ax.plot3D([P0.X, P1.X], [P0.Y, P1.Y], [P0.Z, P1.Z], c='Green', linewidth=2, alpha=0.5)
 
+    # Выравнивание масштабной сетки
+    ax.set_box_aspect((np.ptp(X), np.ptp(Y), np.ptp(Z)))  # aspect ratio is 1:1:1 in data space
     plt.show()
 
 
@@ -109,8 +125,7 @@ if __name__ == '__main__':
     data = pd.read_csv('D:\\TEMP\\pointsClaster_1001.txt', sep='\t', header=None)
     data.columns = ['X2D', 'Y2D', 'X', 'Y', 'Z', 'R', 'G', 'B', 'ID']
     data.head()
-    df = data[data.ID == 4]
-    # print(df.head())
+    df = data[data.ID == 5]
 
     X = df.X
     Y = df.Y
@@ -140,14 +155,14 @@ if __name__ == '__main__':
     M7 = Point3D(Xmax, Ymax, Zmax, "M7")
     M8 = Point3D(Xmin, Ymax, Zmax, "M8")
 
-    m1 = get_sum_distance(X, Y, Z, M1, M0)
-    m2 = get_sum_distance(X, Y, Z, M2, M0)
-    m3 = get_sum_distance(X, Y, Z, M3, M0)
-    m4 = get_sum_distance(X, Y, Z, M4, M0)
-    m5 = get_sum_distance(X, Y, Z, M5, M0)
-    m6 = get_sum_distance(X, Y, Z, M6, M0)
-    m7 = get_sum_distance(X, Y, Z, M7, M0)
-    m8 = get_sum_distance(X, Y, Z, M8, M0)
+    m1 = get_sum_count(X, Y, Z, M1, M0)
+    m2 = get_sum_count(X, Y, Z, M2, M0)
+    m3 = get_sum_count(X, Y, Z, M3, M0)
+    m4 = get_sum_count(X, Y, Z, M4, M0)
+    m5 = get_sum_count(X, Y, Z, M5, M0)
+    m6 = get_sum_count(X, Y, Z, M6, M0)
+    m7 = get_sum_count(X, Y, Z, M7, M0)
+    m8 = get_sum_count(X, Y, Z, M8, M0)
 
     MD = {M1: m1, M2: m2, M3: m3, M4: m4, M5: m5, M6: m6, M7: m7, M8: m8}
     MDD = dict(sorted(MD.items(), key=lambda item: item[1], reverse=True))
@@ -166,9 +181,35 @@ if __name__ == '__main__':
     for keys, value in MDD.items():
         print(f"{keys.Name}: {value:.2f}")
 
+
+
+    # Проверяем, чтобы осевые точки не оказались близки между собой
+    M = list(MDD.keys()) # список узловых отсортированных точек
+    P = [] # Пустой список для осевых точек
+    P.append(M[0])
+    print(f"\nP0: {M[0].Name} ({M[0].X}, {M[0].Y}, {M[0].Z})")
+    for i in range(1, 8):
+        m0_dist = get_distance(M[i], M0)  # до центра масс
+        pp_dist = get_distance(M[i], M[0])  # между осевыми точками M[0] и текущей
+
+        same_x = math.isclose(M[0].X, M[i].X)
+        same_y = math.isclose(M[0].Y, M[i].Y)
+        same_z = math.isclose(M[0].Z, M[i].Z)
+
+        same_xyz = not(same_x or same_y or same_z)
+
+        if ((m0_dist < pp_dist) and same_xyz):
+            P.append(M[i])
+            #print(f"same_x: {same_x}")
+            #print(f"same_y: {same_y}")
+            #print(f"same_z: {same_z}")
+            #print(f"same_xyz: {same_xyz}")
+            print(f"P1: {M[i].Name} ({M[i].X}, {M[i].Y}, {M[i].Z})")
+            break
+
     # Осевые точки
-    P0 = list(MDD.keys())[0]
-    P1 = list(MDD.keys())[1]
+    P0 = P[0]
+    P1 = P[1]
 
     plot3D(X, Y, Z, M0, M1, M2, M3, M4, M5, M6, M7, M8, P0, P1)
 
