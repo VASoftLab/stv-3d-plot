@@ -109,7 +109,7 @@ if __name__ == '__main__':
     data = pd.read_csv('D:\\TEMP\\pointsClaster_1001.txt', sep='\t', header=None)
     data.columns = ['X2D', 'Y2D', 'X', 'Y', 'Z', 'R', 'G', 'B', 'ID']
     data.head()
-    df = data[data.ID == 6]
+    df = data[data.ID == 4]
     # print(df.head())
 
     X = df.X
